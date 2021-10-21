@@ -12,6 +12,12 @@ function join_table_by_type(path, identifier)
     # get filenames of the relevant csv files
     filenames = glob("results_$(identifier)*.csv", path)
     
+    # check if any files exists
+    if isempty(filenames)
+        str = "results_$(identifier)*.csv"
+        error("No files matchin $str found in $path!")
+    end
+
     # iterate over each file and process it
     dfs = map(filenames) do file
         df = CSV.read(file, DataFrame)
