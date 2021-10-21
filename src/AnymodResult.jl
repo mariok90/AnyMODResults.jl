@@ -4,7 +4,15 @@
 function detect_scenarios(path)
     filenames = glob("results_*.csv", path)
     array_of_strings = map(x-> split(x, "_"), filenames)
-    scenario_list = getindex.(array_of_strings, 3)
+    scenario_list = map(array_of_strings) do arr
+        subarr = arr[3:end-1]
+        if length(subarr) > 1
+            return join(subarr, "_")
+        else
+            return first(subarr)
+        end
+    end
+
     return unique(scenario_list) |> Vector{String}
 end
 
@@ -15,7 +23,8 @@ function join_table_by_type(path, identifier)
     # check if any files exists
     if isempty(filenames)
         str = "results_$(identifier)*.csv"
-        error("No files matchin $str found in $path!")
+        @warn "No files matchin $str found in $(path)!"
+        return DataFrame()
     end
 
     # iterate over each file and process it
@@ -23,8 +32,18 @@ function join_table_by_type(path, identifier)
         df = CSV.read(file, DataFrame)
         splitted_filename = split(file, "_")
 
-        # third positions should contain the scenario name
-        df[!, "scenario"] .= splitted_filename[3] 
+        # split of the head and the tail
+        scen_name = splitted_filename[3:end-1]
+
+        # if the scenario name contains a _ the name should be remerged
+        if length(scen_name) > 1
+            scen_name = join(scen_name, "_")
+        else
+            scen_name =  first(scen_name)
+        end
+
+        # add scenario as column
+        df[!, "scenario"] .= scen_name
 
         # expand the index columns
         identifier == "summary" && expand_col!(df, "region_dispatch")
