@@ -5,9 +5,8 @@
     
     data = joinpath("data", "testset2")
     result = @suppress_err AnymodResult(data)
-
-    warn_msg = "No files matchin results_costs*.csv found in data\\testset2!"
-    @test_logs (:warn, warn_msg) AnymodResult(data)
+    
+    @test_logs (:warn,) match_mode=:any AnymodResult(data)
     @test typeof(result) == AnymodResult
 
     @test result.scenarios == [

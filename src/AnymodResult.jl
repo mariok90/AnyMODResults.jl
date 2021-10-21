@@ -23,7 +23,7 @@ function join_table_by_type(path, identifier)
     # check if any files exists
     if isempty(filenames)
         str = "results_$(identifier)*.csv"
-        @warn "No files matchin $str found in $(path)!"
+        @warn "No files matching $str found in $(path)!"
         return DataFrame()
     end
 
