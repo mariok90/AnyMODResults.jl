@@ -1,9 +1,15 @@
 
-@testset "Testset 2 Read-in" begin
-    data = joinpath("data", "testset2")
-    result = AnymodResult(data)
 
+
+@testset "Testset 2 Read-in" begin
+    
+    data = joinpath("data", "testset2")
+    result = @suppress_err AnymodResult(data)
+
+    warn_msg = "No files matchin results_costs*.csv found in data\\testset2!"
+    @test_logs (:warn, warn_msg) AnymodResult(data)
     @test typeof(result) == AnymodResult
+
     @test result.scenarios == [
         "ntc_11"
         "ntc_16"
