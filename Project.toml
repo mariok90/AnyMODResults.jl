@@ -13,5 +13,6 @@ Suppressor = "fd094767-a336-5f1f-9728-57cf17d0bbfb"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [compat]
-JSON = "0.21"
+JSON >= "0.21"
+DataFrames >= "1"
 julia = ">= 1.3"
