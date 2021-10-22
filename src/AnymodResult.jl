@@ -1,11 +1,9 @@
 
-
-
 function detect_scenarios(path)
     filenames = glob("results_*.csv", path)
-    array_of_strings = map(x-> split(x, "_"), filenames)
+    array_of_strings = map(x -> split(x, "_"), filenames)
     scenario_list = map(array_of_strings) do arr
-        subarr = arr[3:end-1]
+        subarr = arr[3:(end - 1)]
         if length(subarr) > 1
             return join(subarr, "_")
         else
@@ -13,13 +11,13 @@ function detect_scenarios(path)
         end
     end
 
-    return unique(scenario_list) |> Vector{String}
+    return Vector{String}(unique(scenario_list))
 end
 
 function join_table_by_type(path, identifier)
     # get filenames of the relevant csv files
     filenames = glob("results_$(identifier)*.csv", path)
-    
+
     # check if any files exists
     if isempty(filenames)
         str = "results_$(identifier)*.csv"
@@ -33,13 +31,13 @@ function join_table_by_type(path, identifier)
         splitted_filename = split(file, "_")
 
         # split of the head and the tail
-        scen_name = splitted_filename[3:end-1]
+        scen_name = splitted_filename[3:(end - 1)]
 
         # if the scenario name contains a _ the name should be remerged
         if length(scen_name) > 1
             scen_name = join(scen_name, "_")
         else
-            scen_name =  first(scen_name)
+            scen_name = first(scen_name)
         end
 
         # add scenario as column
@@ -94,13 +92,8 @@ struct AnymodResult
     function AnymodResult(path)
         scenario_task = Threads.@spawn detect_scenarios(path)
         tables = ["summary", "costs", "exchange"]
-        table_tasks = [
-            Threads.@spawn join_table_by_type(path, x) for x in tables
-        ]
+        table_tasks = [Threads.@spawn join_table_by_type(path, x) for x in tables]
 
-    return new(
-        fetch(scenario_task),
-        fetch.(table_tasks)...,
-    )
+        return new(fetch(scenario_task), fetch.(table_tasks)...)
     end
 end
