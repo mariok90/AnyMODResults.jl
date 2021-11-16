@@ -1,6 +1,6 @@
 
 function split_into_cols(df::AbstractDataFrame, col)
-    new_cols = map(x -> anymod_split(x), df[!, col])
+    new_cols = map(anymod_split, df[!, col])
     cols_len = map(length, new_cols)
     return new_cols, cols_len
 end
