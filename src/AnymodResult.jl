@@ -50,15 +50,17 @@ function join_table_by_type(path, identifier)
         identifier == "exchange" && expand_col!(df, "region_to")
         identifier == "exchange" || expand_col!(df, "technology")
         expand_col!(df, "carrier")
+        expand_col!(df, "timestep_superordinate_dispatch")
 
         # drop the expanded columns based on filetype
         if identifier == "summary"
-            drop_cols = [:region_dispatch, :technology, :carrier]
+            drop_cols = [:region_dispatch, :technology]
         elseif identifier == "costs"
-            drop_cols = [:region, :technology, :carrier]
+            drop_cols = [:region, :technology]
         elseif identifier == "exchange"
-            drop_cols = [:region_from, :region_to, :carrier]
+            drop_cols = [:region_from, :region_to]
         end
+        append!(drop_cols, [:timestep_superordinate_dispatch, :carrier])
         select!(df, Not(drop_cols))
 
         return df
@@ -89,11 +91,21 @@ struct AnymodResult
     costtable
     exchangetable
 
-    function AnymodResult(path)
-        scenario_task = Threads.@spawn detect_scenarios(path)
-        tables = ["summary", "costs", "exchange"]
-        table_tasks = [Threads.@spawn join_table_by_type(path, x) for x in tables]
+    function AnymodResult(path; threaded=true)
+        if threaded
+            scenario_task = Threads.@spawn detect_scenarios(path)
+            tables = ["summary", "costs", "exchange"]
+            table_tasks = [Threads.@spawn join_table_by_type(path, x) for x in tables]
 
-        return new(fetch(scenario_task), fetch.(table_tasks)...)
+            return new(fetch(scenario_task), fetch.(table_tasks)...)
+        else
+            scenarios = detect_scenarios(path)
+            tables = ["summary", "costs", "exchange"]
+
+            return new(
+                scenarios,
+                [join_table_by_type(path, x) for x in tables]...
+            )
+        end
     end
 end

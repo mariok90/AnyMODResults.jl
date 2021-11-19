@@ -23,3 +23,11 @@ end
 
 anymod_split(x::AbstractString) = split(x, " < ")
 anymod_split(x::AbstractString, i::Int) = split(x, " < ")[i]
+function anymod_split(x)
+    try
+        y = string(x)
+        return anymod_split(y)
+    catch
+        @error "Could not convert $x into an string."
+    end
+end
