@@ -10,7 +10,6 @@
     @test size(result.exchangetable) == (6338, 10)
 
     summarytable_names = [
-        "timestep_superordinate_dispatch",
         "variable",
         "value",
         "scenario",
@@ -21,28 +20,28 @@
         "technology_3",
         "carrier_1",
         "carrier_2",
+        "timestep_superordinate_dispatch_1"
     ]
 
     @test names(result.summarytable) == summarytable_names
 
     costtable_names = [
-        "timestep_superordinate_dispatch",
         "variable",
         "value",
         "scenario",
         "region_1",
-        "region_2", 
+        "region_2",
         "technology_1",
         "technology_2",
         "technology_3",
         "carrier_1",
-        "carrier_2"
+        "carrier_2",
+        "timestep_superordinate_dispatch_1"
     ] 
 
     @test names(result.costtable) == costtable_names
 
     exchangetable_names = [
-        "timestep_superordinate_dispatch",
         "value",
         "variable",
         "scenario",
@@ -51,7 +50,8 @@
         "region_to_1",
         "region_to_2",
         "carrier_1",
-        "carrier_2"
+        "carrier_2",
+        "timestep_superordinate_dispatch_1"
     ]
 
     @test names(result.exchangetable) == exchangetable_names
