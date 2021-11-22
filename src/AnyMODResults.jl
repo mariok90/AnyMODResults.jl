@@ -6,6 +6,7 @@ using Glob
 
 include("postprocessing.jl")
 include("AnymodResult.jl")
+include("Mask.jl")
 
 export AnymodResult
 
