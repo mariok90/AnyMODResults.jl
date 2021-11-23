@@ -3,7 +3,7 @@ Timestep,
 Variable, 
 Carrier, 
 Region,
-Scenario
+Scenario,
 Mask,
 PivotResult,
 pivotresult
@@ -79,7 +79,7 @@ for dimension = (:Variable, :Scenario)
             mode::Symbol
             colname::AbstractString
         
-            $dimension() = new{Nothing}(nothing, :equal, nothing)
+            $dimension() = new{Nothing}(nothing, :equal, colnames.$dimension)
             
             function $dimension(x::T; mode = :equal) where T<:AbstractString
                 colname = colnames.$dimension
