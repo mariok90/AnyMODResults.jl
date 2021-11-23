@@ -1,5 +1,5 @@
 data = joinpath("data", "testset1")
-result = AnymodResult(data)
+result = AnymodResult(data; threaded=false)
 
 @testset "Testset 1" begin
     @testset "Read-in" begin
@@ -64,7 +64,8 @@ result = AnymodResult(data)
             Scenario(),
             Technology(1 => ["wind_offshore","wind_onshore","pv"]),
             Region(2 => "DE", mode=:occursin),
-            Variable("capaConv")
+            Variable("capaConv"),
+            Timestep("2050")
         )
         
         mask1_result = CSV.read(
@@ -77,7 +78,7 @@ result = AnymodResult(data)
         mask2 = Mask(
             Technology(2),
             Region(1 => ["AT", "DE", "CH", "FR", "NL", "DK"]),
-            Variable(["capaConv", "capaStOut"]),
+            Variable("capaConv", "capaStOut"),
             Scenario("integriert")
         )
 
@@ -97,10 +98,11 @@ result = AnymodResult(data)
         end
 
         mask3 = Mask(
-            Carrier(1),
+            Carrier(),
             Variable(["demand", "use","gen","export","import","trdBuy"]),
             Scenario("integriert"),
-            Region(2 => "DE", mode = :occursin)
+            Region(2 => "DE", mode = :occursin),
+            Timestep(["2050"])
         )
 
         mask3_result = CSV.read(
@@ -117,6 +119,13 @@ result = AnymodResult(data)
                 @test mask3_result[x,y] ≈ df3[x,y]
             end
         end
+
+        mask_warn = Mask(
+            Carrier(4 => ["asdf"]),
+            Region(5 => "DE", mode = :occursin)
+        )
+
+        @test_throws ArgumentError pivotresult(result, mask_warn)
 
     end
 end
