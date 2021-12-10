@@ -14,6 +14,21 @@ function detect_scenarios(path)
     return Vector{String}(unique(scenario_list))
 end
 
+
+function get_pkg_version(name::AbstractString)
+    vals = Pkg.dependencies() |> values
+    pkg_info = [x for x in vals if x.name == name] |> only
+    return pkg_info.version
+end
+
+function read_csv(x::AbstractString)
+    if get_pkg_version("CSV") >= v"0.7"
+        return CSV.read(x, DataFrame)
+    else
+        return CSV.read(x)
+    end
+end
+
 function join_table_by_type(path, identifier)
     # get filenames of the relevant csv files
     filenames = glob("results_$(identifier)*.csv", path)
@@ -27,7 +42,7 @@ function join_table_by_type(path, identifier)
 
     # iterate over each file and process it
     dfs = map(filenames) do file
-        df = CSV.read(file, DataFrame)
+        df = read_csv(file)
         splitted_filename = split(file, "_")
 
         # split of the head and the tail
