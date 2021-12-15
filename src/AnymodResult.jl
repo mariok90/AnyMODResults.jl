@@ -1,6 +1,19 @@
+function extract_result_files(path, identifier="")
+    filenames = glob("results_$(identifier)*.csv", path)
+    extracted_filenames =  map(filenames) do fp
+        splitted_paths = splitpath(fp)
+        if length(splitted_paths) > 1
+            return last(splitted_paths)
+        else
+            return first(splitted_paths)
+        end
+    end
+    return extracted_filenames
+end
+
 
 function detect_scenarios(path)
-    filenames = glob("results_*.csv", path)
+    filenames = extract_result_files(path)
     array_of_strings = map(x -> split(x, "_"), filenames)
     scenario_list = map(array_of_strings) do arr
         subarr = arr[3:(end - 1)]
@@ -31,19 +44,20 @@ end
 
 function join_table_by_type(path, identifier)
     # get filenames of the relevant csv files
-    filenames = glob("results_$(identifier)*.csv", path)
+    filepaths = glob("results_$(identifier)*.csv", path)
+    filenames = extract_result_files(path, identifier)
 
     # check if any files exists
-    if isempty(filenames)
+    if isempty(filepaths)
         str = "results_$(identifier)*.csv"
         @warn "No files matching $str found in $(path)!"
         return DataFrame()
     end
 
     # iterate over each file and process it
-    dfs = map(filenames) do file
-        df = read_csv(file)
-        splitted_filename = split(file, "_")
+    dfs = map(zip(filenames,filepaths)) do (filename, filepath)
+        df = read_csv(filepath)
+        splitted_filename = split(filename, "_")
 
         # split of the head and the tail
         scen_name = splitted_filename[3:(end - 1)]
@@ -94,6 +108,9 @@ function join_table_by_type(path, identifier)
 
         # append the dataframes if columns fit and return
         return reduce(vcat, dfs)
+    # elseif isempty(dfs)
+    #     @warn "DataFrame ist empty!"
+    #     return dfs
     else
         # return if only one scenario exists
         return dfs[1]

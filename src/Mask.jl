@@ -162,7 +162,7 @@ struct PivotResult
 
         filter_df!(df, m.row)
         filter_df!(df, m.col)
-
+        # to do: handle case when df is empty
         groupkeys = [m.row.colname, m.col.colname]
         df = combine(groupby(df, groupkeys), "value" => sum => "value")
         df = unstack(df, m.row.colname, m.col.colname, "value")
