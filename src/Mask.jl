@@ -147,6 +147,21 @@ function filter_df!(df::AbstractDataFrame, af::ResultDimension{T}) where T<:Abst
     return df
 end
 
+function filter_results(ar::AnymodResult, m::Mask)
+    df = copy(ar.summarytable)
+    # filter summarytable
+    for fil in m.filters
+        filter_df!(df, fil)
+    end
+
+    filter_df!(df, m.row)
+    filter_df!(df, m.col)
+
+    return df
+end
+
+
+
 struct PivotResult
     result::AnymodResult
     mask::Mask
@@ -154,14 +169,8 @@ struct PivotResult
     
     function PivotResult(ar::AnymodResult, m::Mask)
 
-        df = copy(ar.summarytable)
-        # filter summarytable
-        for fil in m.filters
-            filter_df!(df, fil)
-        end
+        df = filter_results(ar, m)
 
-        filter_df!(df, m.row)
-        filter_df!(df, m.col)
         # to do: handle case when df is empty
         groupkeys = [m.row.colname, m.col.colname]
         df = combine(groupby(df, groupkeys), "value" => sum => "value")
