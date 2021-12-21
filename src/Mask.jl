@@ -20,7 +20,7 @@ const colnames = (
 abstract type ResultDimension{T} end
 abstract type ResultWithDimension{T} <: ResultDimension{T} end
 abstract type ResultWithoutDimension{T} <: ResultDimension{T} end
-const SuperType = Union{AbstractVector, AbstractString, Nothing}
+const SuperType = Union{AbstractVector, AbstractString, Nothing, Int}
 
 
 for dimension = (:Technology, :Timestep, :Carrier, :Region)
@@ -45,12 +45,22 @@ for dimension = (:Technology, :Timestep, :Carrier, :Region)
             function $dimension(p::T; mode = :equal) where T<:Pair{<:Int,<:AbstractString}
                 dim, val = p
                 colname = colnames.$dimension * "$dim"
-                return new{typeof(val)}(val, mode, dim, colname)
+                int_val = tryparse(Int, val)                
+                if isnothing(int_val)
+                    return new{typeof(val)}(val, mode, dim, colname)
+                else
+                    return new{typeof(int_val)}(int_val, mode, dim, colname)
+                end
             end
 
             function $dimension(x::T; mode = :equal, dim=1) where T<:AbstractString
                 colname = colnames.$dimension * "$dim"
-                return new{T}(x, mode, dim, colname)
+                int_val = tryparse(Int, x)
+                if isnothing(int_val)
+                    return new{T}(x, mode, dim, colname)
+                else
+                    return new{typeof(int_val)}(int_val, mode, dim, colname)
+                end
             end
 
             function $dimension(i::T; mode = :equal) where T<:Integer
@@ -65,7 +75,13 @@ for dimension = (:Technology, :Timestep, :Carrier, :Region)
 
             function $dimension(args::T...; mode = :in, dim=1) where T<:AbstractString
                 colname = colnames.$dimension * "$dim"
-                vec = [args...]
+                args_int = tryparse.(Int, args)
+                @show args_int
+                if eltype(args_int) <: Int
+                    vec = [args_int...]
+                else
+                    vec = [args...]
+                end
                 return new{typeof(vec)}(vec, mode, dim, colname)
             end
         end
@@ -101,12 +117,12 @@ for dimension = (:Variable, :Scenario)
 end
 
 struct Mask
-    row::ResultDimension
+    row::Union{ResultDimension, Vector{ResultDimension}}
     col::ResultDimension
     filters::Vector{ResultDimension}
 
-    function Mask(row::ResultDimension, col::ResultDimension, filters::ResultDimension...)
-        new(row, col, [filters...])
+    function Mask(row, col::ResultDimension, filters::ResultDimension...)
+        new(row, col, [filters...]) 
     end
 end
 
@@ -132,6 +148,28 @@ function filter_df!(df::AbstractDataFrame, af::ResultDimension{T}) where T<:Abst
     return df
 end
 
+function filter_df!(df::AbstractDataFrame, af::ResultDimension{T}) where T<:Int
+
+    if af.colname in names(df)
+        if af.mode == :equal
+            coltype = eltype(df[:,af.colname])
+            if coltype <: Int
+                filter!(x-> isequal(af.vals, x[af.colname]), df)
+            elseif coltype <: AbstractString
+                filter!(x-> isequal(string(af.vals), x[af.colname]), df)
+            else
+                @warn "Type $coltype in column $(af.colname) could not be filtered!"
+            end
+        else 
+            @warn "Mode $(af.mode) is not supported for filtering based on a string" af.vals
+        end
+    else
+        @warn "Column $(af.colname) does not exists in DataFrame" names(df)
+    end
+    
+    return df
+end
+
 function filter_df!(df::AbstractDataFrame, af::ResultDimension{T}) where T<:AbstractVector
 
     if af.colname in names(df)
@@ -147,13 +185,19 @@ function filter_df!(df::AbstractDataFrame, af::ResultDimension{T}) where T<:Abst
     return df
 end
 
+
+
+function filter_df!(df::AbstractDataFrame, vec::T) where T<:AbstractVector
+    for fil in vec
+        filter_df!(df, fil)
+    end
+    return df
+end
+
 function filter_results(ar::AnymodResult, m::Mask)
     df = copy(ar.summarytable)
     # filter summarytable
-    for fil in m.filters
-        filter_df!(df, fil)
-    end
-
+    filter_df!(df, m.filters)
     filter_df!(df, m.row)
     filter_df!(df, m.col)
 
