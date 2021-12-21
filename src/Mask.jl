@@ -53,6 +53,12 @@ for dimension = (:Technology, :Timestep, :Carrier, :Region)
                 end
             end
 
+            function $dimension(p::T; mode = :equal) where T<:Pair{<:Int,<:Int}
+                dim, val = p
+                colname = colnames.$dimension * "$dim"
+                return new{typeof(val)}(val, mode, dim, colname)
+            end
+
             function $dimension(x::T; mode = :equal, dim=1) where T<:AbstractString
                 colname = colnames.$dimension * "$dim"
                 int_val = tryparse(Int, x)
@@ -117,7 +123,7 @@ for dimension = (:Variable, :Scenario)
 end
 
 struct Mask
-    row::Union{ResultDimension, Vector{ResultDimension}}
+    row
     col::ResultDimension
     filters::Vector{ResultDimension}
 
@@ -156,7 +162,7 @@ function filter_df!(df::AbstractDataFrame, af::ResultDimension{T}) where T<:Int
             if coltype <: Int
                 filter!(x-> isequal(af.vals, x[af.colname]), df)
             elseif coltype <: AbstractString
-                filter!(x-> isequal(string(af.vals), x[af.colname]), df)
+                filter!(x-> string(af.vals) == x[af.colname], df)
             else
                 @warn "Type $coltype in column $(af.colname) could not be filtered!"
             end
