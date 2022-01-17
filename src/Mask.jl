@@ -222,9 +222,16 @@ struct PivotResult
         df = filter_results(ar, m)
 
         # to do: handle case when df is empty
-        groupkeys = [m.row.colname, m.col.colname]
+
+        if m.row isa Array
+            colnames = [rt.colname for rt in m.row]
+            groupkeys = [colnames..., m.col.colname]
+        else
+            groupkeys = [m.row.colname, m.col.colname]
+            colnames = m.row.colname
+        end
         df = combine(groupby(df, groupkeys), "value" => sum => "value")
-        df = unstack(df, m.row.colname, m.col.colname, "value")
+        df = unstack(df, colnames, m.col.colname, "value")
         return new(ar, m, df)
     end
 end
