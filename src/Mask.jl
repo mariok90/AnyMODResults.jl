@@ -6,7 +6,9 @@ Region,
 Scenario,
 Mask,
 PivotResult,
-pivotresult
+pivotresult,
+StackedResult,
+stackedresult
 
 const colnames = (
     Region = "region_dispatch_",
@@ -238,4 +240,31 @@ end
 
 function pivotresult(ar::AnymodResult, m::Mask)
     return PivotResult(ar, m).df
+end
+
+struct StackedResult
+    result::AnymodResult
+    mask::Mask
+    df::AbstractDataFrame
+    
+    function StackedResult(ar::AnymodResult, m::Mask)
+
+        df = filter_results(ar, m)
+
+        # to do: handle case when df is empty
+
+        if m.row isa Array
+            colnames = [rt.colname for rt in m.row]
+            groupkeys = [colnames..., m.col.colname]
+        else
+            groupkeys = [m.row.colname, m.col.colname]
+            colnames = m.row.colname
+        end
+        df = combine(groupby(df, groupkeys), "value" => sum => "value")
+        return new(ar, m, df)
+    end
+end
+
+function stackedresult(ar::AnymodResult, m::Mask)
+    return StackedResult(ar, m).df
 end
