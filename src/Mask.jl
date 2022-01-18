@@ -126,8 +126,12 @@ end
 
 struct Mask
     row
-    col::ResultDimension
+    col
     filters::Vector{ResultDimension}
+
+    function Mask(row, col::Nothing, filters::ResultDimension...)
+        new(row, col, [filters...])
+    end
 
     function Mask(row, col::ResultDimension, filters::ResultDimension...)
         new(row, col, [filters...]) 
@@ -194,11 +198,14 @@ function filter_df!(df::AbstractDataFrame, af::ResultDimension{T}) where T<:Abst
 end
 
 
-
 function filter_df!(df::AbstractDataFrame, vec::T) where T<:AbstractVector
     for fil in vec
         filter_df!(df, fil)
     end
+    return df
+end
+
+function filter_df!(df::AbstractDataFrame, vec::Nothing)
     return df
 end
 
@@ -213,6 +220,34 @@ function filter_results(ar::AnymodResult, m::Mask)
 end
 
 
+function get_colnames(row::T, col) where T<:AbstractArray
+    colnames = [rt.colname for rt in row]
+    groupkeys = [colnames..., col.colname]
+    return colnames, groupkeys
+end
+
+function get_colnames(row::T, col::Nothing) where T<:AbstractArray
+    colnames = groupkeys = [rt.colname for rt in row]
+    return colnames, groupkeys
+end
+
+function get_colnames(row, col::Nothing)
+    return row.colname, row.colname
+end
+
+function get_colnames(row, col)
+    colnames = row.colname
+    groupkeys = [row.colname, col.colname]
+    return colnames, groupkeys
+end
+
+function prepare_df_result(ar::AnymodResult, m::Mask)
+    df = filter_results(ar, m)
+    # to do: handle case when df is empty
+    colnames, groupkeys = get_colnames(m.row, m.col)
+    df = combine(groupby(df, groupkeys), "value" => sum => "value")
+    return colnames, df
+end
 
 struct PivotResult
     result::AnymodResult
@@ -220,20 +255,12 @@ struct PivotResult
     df::AbstractDataFrame
     
     function PivotResult(ar::AnymodResult, m::Mask)
-
-        df = filter_results(ar, m)
-
-        # to do: handle case when df is empty
-
-        if m.row isa Array
-            colnames = [rt.colname for rt in m.row]
-            groupkeys = [colnames..., m.col.colname]
+        colnames, df = prepare_df_result(ar, m)
+        if isnothing(m.col)
+            return new(ar, m, df)
         else
-            groupkeys = [m.row.colname, m.col.colname]
-            colnames = m.row.colname
+            df = unstack(df, colnames, m.col.colname, "value")
         end
-        df = combine(groupby(df, groupkeys), "value" => sum => "value")
-        df = unstack(df, colnames, m.col.colname, "value")
         return new(ar, m, df)
     end
 end
@@ -248,19 +275,7 @@ struct StackedResult
     df::AbstractDataFrame
     
     function StackedResult(ar::AnymodResult, m::Mask)
-
-        df = filter_results(ar, m)
-
-        # to do: handle case when df is empty
-
-        if m.row isa Array
-            colnames = [rt.colname for rt in m.row]
-            groupkeys = [colnames..., m.col.colname]
-        else
-            groupkeys = [m.row.colname, m.col.colname]
-            colnames = m.row.colname
-        end
-        df = combine(groupby(df, groupkeys), "value" => sum => "value")
+        _, df = prepare_df_result(ar, m)
         return new(ar, m, df)
     end
 end

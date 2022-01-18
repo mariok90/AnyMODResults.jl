@@ -1,3 +1,5 @@
+export AnymodResult
+
 function extract_result_files(path, identifier="")
     filenames = glob("results_$(identifier)*.csv", path)
     extracted_filenames =  map(filenames) do fp
